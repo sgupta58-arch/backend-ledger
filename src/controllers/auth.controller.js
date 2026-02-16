@@ -1,8 +1,9 @@
 const { compare } = require("bcrypt")
 const userModel = require("../models/user.models.js")
 const jwt = require("jsonwebtoken")
+const emailService = require("../services/email.service.js")
 
-
+ 
 // user register controller
 // / POST/api/auth/register
 
@@ -80,6 +81,7 @@ async function userLoginController(req,res) {
         },
     token
 })
+    await emailService.sendRegisterationEmail(user.email,user.name)
 
 }
 
