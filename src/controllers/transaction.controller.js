@@ -3,6 +3,7 @@ const ledgerModel = require("../models/ledger.model.js")
 const accountModel = require("../models/account.model.js")
 const emailService = require("../services/email.service.js")
 const mongoose = require("mongoose")
+const userModel = require("../models/user.models.js")
 
 
 ////--validate request------///
@@ -13,7 +14,7 @@ async function createTransaction(req,res) {
 
     if(!fromAccount || !toAccount || !amount || !idempotencyKey){
         return res.status(400).json({
-            message:"fromAccount, toAccount,idempotencyKey,amount"
+            message:"fromAccount, toAccount,idempotencyKey,amount is required "
         })
     }
     const fromUserAccount = await accountModel.findOne({
@@ -122,6 +123,81 @@ async function createTransaction(req,res) {
 
 }
 
+
+
+async function createInitialFundsTransaction(req,res) {
+
+    const {toAccount,amount,idempotencyKey} = req.body
+
+    if(!toAccount || !amount || !idempotencyKey){
+        return res.status(400).jsomn({
+            message:"toAccount,amount,idempotencyKey is required"
+        })
+    }
+    const toUserAccount = await accountModel.findOne({
+        _id: toAccount
+    })
+    
+    if(!toUserAccount){
+        return res.status(400).json({
+            message:"Invalid toUserAccount"
+        })
+    }
+
+    const fromUserAccount = accountModel.findOne({
+        systemUser:true,
+        user:req.user._id
+
+    })
+
+    if(!fromUserAccount){
+        return res.status(400).json({
+            message:"system user not found"
+        })
+    }
+
+    const session = mongoose.startSession()
+    session.startTransaction()
+
+    const transaction = await transactionModel.create({
+        fromAccount:fromUserAccount._id,
+        toAccount,
+        idempotencyKey,
+        amount,
+        status : "PENDING"
+    },{session})
+
+    const debitLedgerEntry = await ledgerModel.create({
+        account: fromUserAccount._id,
+        amount:amount,
+        transaction:transaction._id,
+        type:"DEBIT"
+
+
+    },{session})
+
+    const creditLedgerEntry = await ledgerModel.create({
+        account:toAccount,
+        amount: amount,
+        transaction:transaction._id,
+        type:"CREDIT",
+    },{session})
+
+    transaction.status= "COMPLETED"
+    await transaction.save((session))
+
+    await session.commitTransaction()
+    sesssion.endSession()
+
+    return res.status(200).json({
+        message:"initial funds transaction completed succesfully",
+        transaction:transaction
+    })
+
+
+    
+}
+
 module.exports={
-    createTransaction
+    createTransaction,createInitialFundsTransaction
 }
