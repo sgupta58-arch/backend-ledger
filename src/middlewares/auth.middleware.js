@@ -40,7 +40,52 @@ async function authMiddleware(req,res,next) {
     console.log("Decoded:", decoded)
 }
 
+async function authSystemUserMiddleware(req,res,next){
+
+    const token = req.cookies.token || req.headers.authorization?.split(" ")[1]
+
+    console.log(token)
+    
+    if(!token){
+        return res.status(400).json({
+            message:"forbidden token not a system user"
+            })
+    }
+
+    console.log(token)
+
+    try {
+        const decoded = jwt.verify(token,process.env.JWT_SECRET)
+
+        
+
+        const user = await userModel
+        .findById(decoded.user)
+        .select("+systemUser")
+
+        // console.log(user)
+
+        if(!user.systemUser){
+            return res.status(400).json({
+                message:"forbidden axess invalid token"
+            })
+        }
+
+        req.user = user
+
+        return next()
+        
+
+    } catch (error) {
+        return res.status(400).json({
+            message: " 401 Unauthorized acess not a syste user"
+        })
+
+        
+    }
+}
+
 
 module.exports={
-    authMiddleware
+    authMiddleware,authSystemUserMiddleware
 }

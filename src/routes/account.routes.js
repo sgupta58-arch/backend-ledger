@@ -14,5 +14,8 @@ const accountRouter = express.Router()
 //protected route
 accountRouter.post("/",authMiddleware,accountController.createAccount)
 
+//---get api/auth/account/balance/:accountID
+accountRouter.get("/:accountID",authMiddleware, accountController.getAccountBalanceController)
+
 module.exports = accountRouter
 
