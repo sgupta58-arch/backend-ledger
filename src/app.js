@@ -14,6 +14,12 @@ const accountRouter = require("./routes/account.routes.js")
 const transactionRoutes = require("./routes/transaciton.routes.js")
 const transactionModel = require('./models/transaction.model.js')
 
+////---dummmy api--//
+app.get("/",(req,res)=>{
+    res.send("Ledger service is up and running!!!!!")
+})
+
+
 //---Routes use---
 app.use("/api/auth",authRouter)
 app.use("/api/account",accountRouter)
